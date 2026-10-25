@@ -115,20 +115,36 @@ def parse_chat_text(raw_text: str) -> List[ParsedMessage]:
 
 def extract_text_from_file_bytes(file_bytes: bytes, filename: str) -> str:
     """
-    Accepts raw file bytes and filename. If .zip, unpacks the primary chat .txt file.
-    If .txt, decodes using utf-8 with utf-8-sig or latin-1 fallback.
+    Accepts raw file bytes and filename. Detects .zip either by extension or
+    magic bytes (PK\x03\x04), unpacking the primary chat text file.
+    Decodes using robust multi-encoding fallbacks.
     """
-    if filename.lower().endswith(".zip"):
-        with zipfile.ZipFile(io.BytesIO(file_bytes)) as z:
-            txt_files = [f for f in z.namelist() if f.lower().endswith(".txt") and not f.startswith("__MACOSX")]
-            if not txt_files:
-                raise ValueError("No .txt chat file found inside the provided .zip archive.")
-            # Prefer _chat.txt or the largest .txt file
-            preferred = next((f for f in txt_files if "_chat.txt" in f.lower()), txt_files[0])
-            raw_data = z.read(preferred)
-            return _decode_bytes(raw_data)
-    else:
-        return _decode_bytes(file_bytes)
+    is_zip = filename.lower().endswith(".zip") or file_bytes[:4] == b"PK\x03\x04"
+    if is_zip:
+        try:
+            with zipfile.ZipFile(io.BytesIO(file_bytes)) as z:
+                candidates = [
+                    f for f in z.namelist()
+                    if not f.startswith("__MACOSX") and not f.endswith("/")
+                ]
+                txt_files = [f for f in candidates if f.lower().endswith((".txt", ".text", ".chat"))]
+                if txt_files:
+                    preferred = next((f for f in txt_files if "_chat.txt" in f.lower()), txt_files[0])
+                    return _decode_bytes(z.read(preferred))
+
+                non_media = [
+                    f for f in candidates
+                    if not f.lower().endswith((".jpg", ".jpeg", ".png", ".opus", ".mp4", ".mp3", ".webp", ".gif"))
+                ]
+                if non_media:
+                    return _decode_bytes(z.read(non_media[0]))
+
+                raise ValueError("No text chat file found inside the zip archive.")
+        except zipfile.BadZipFile:
+            return _decode_bytes(file_bytes)
+
+    return _decode_bytes(file_bytes)
+
 
 
 def _decode_bytes(b: bytes) -> str:

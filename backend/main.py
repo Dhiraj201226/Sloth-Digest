@@ -4,11 +4,28 @@ Serves REST endpoints, SSE progress streaming, and health checks on localhost.
 Strictly local-first.
 """
 
+import sys
 import asyncio
 import json
 import uuid
 from typing import Dict, Any, List, Optional
 from pathlib import Path
+
+# Ensure starlette formparsers has multipart reference
+try:
+    import multipart
+    import starlette.formparsers
+    starlette.formparsers.multipart = multipart
+except Exception:
+    pass
+
+# Ensure UTF-8 stdout encoding on Windows
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
@@ -21,6 +38,7 @@ from backend.config import (
     SYNTHETIC_DIR,
     WATCHED_DIR,
 )
+
 from backend.models import (
     DigestResponse,
     SystemHealth,
@@ -122,29 +140,31 @@ async def upload_and_digest(
     file: UploadFile = File(...),
     model: Optional[str] = Form(None),
 ):
-    """Uploads a WhatsApp chat (.txt or .zip) and generates the morning digest."""
+    """Uploads a WhatsApp chat export and generates the morning digest."""
     filename = file.filename or "uploaded_chat.txt"
-    ext = Path(filename).suffix.lower()
-    if ext not in [".txt", ".zip"]:
-        raise HTTPException(
-            status_code=400,
-            detail="Unsupported file format. Please upload a WhatsApp export in .txt or .zip format."
-        )
-
     file_bytes = await file.read()
     if not file_bytes:
-        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+        print(f"[Upload Error] File '{filename}' is empty (0 bytes).")
+        raise HTTPException(
+            status_code=400,
+            detail="The uploaded file is empty (0 bytes)."
+        )
+
+    print(f"[Upload] Processing '{filename}' ({len(file_bytes)} bytes)...")
 
     try:
         raw_text = extract_text_from_file_bytes(file_bytes, filename)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to extract chat text: {e}")
+        print(f"[Upload Error] Failed to unpack/read '{filename}': {e}")
+        raise HTTPException(status_code=400, detail=f"Failed to read chat file: {e}")
 
     messages = parse_chat_text(raw_text)
     if not messages:
+        first_lines = " | ".join(raw_text.splitlines()[:2])
+        print(f"[Upload Warning] No WhatsApp messages matched in '{filename}'. First lines: {first_lines}")
         raise HTTPException(
             status_code=422,
-            detail="No recognizable WhatsApp messages found in the file. Ensure it contains standard timestamps."
+            detail="No recognizable WhatsApp messages found in the file. Please ensure it contains standard WhatsApp chat timestamps."
         )
 
     task_id = str(uuid.uuid4())[:8]
@@ -159,8 +179,10 @@ async def upload_and_digest(
             model_name=model or DEFAULT_MODEL,
             progress_callback=update_progress,
         )
+        print(f"[Upload Success] Digested '{filename}': {digest.total_messages} msgs read, {digest.safe_to_ignore_count} noise ignored.")
         return digest
     except Exception as e:
+        print(f"[Upload Error] Inference error on '{filename}': {e}")
         TASK_PROGRESS[task_id] = ProgressEvent(
             task_id=task_id,
             status="error",
@@ -172,6 +194,8 @@ async def upload_and_digest(
             message=str(e),
         )
         raise HTTPException(status_code=500, detail=f"Inference error: {e}")
+
+
 
 
 @app.get("/api/synthetic/samples")
