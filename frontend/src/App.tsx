@@ -3,6 +3,8 @@ import {
   FolderCheck,
   Upload,
   AlertCircle,
+  Coffee,
+  MessageSquare,
 } from 'lucide-react';
 import type {
   DigestResponse,
@@ -29,6 +31,7 @@ import { Dropzone } from './components/Dropzone';
 import { StreamingProgress } from './components/StreamingProgress';
 import { ModelSetupGuide } from './components/ModelSetupGuide';
 import { TidierModal } from './components/TidierModal';
+import { ChatViewer } from './components/ChatViewer';
 
 export const App: React.FC = () => {
   const [health, setHealth] = useState<SystemHealth | null>(null);
@@ -41,6 +44,10 @@ export const App: React.FC = () => {
   const [tidierOpen, setTidierOpen] = useState(false);
   const [showUploader, setShowUploader] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // New states for chat view and tab navigation
+  const [activeTab, setActiveTab] = useState<'digest' | 'chat'>('digest');
+  const [highlightedChatLine, setHighlightedChatLine] = useState<number | null>(null);
 
   const loadInitialData = async () => {
     try {
@@ -88,6 +95,7 @@ export const App: React.FC = () => {
       const result = await uploadChat(file, health?.active_model);
       setDigest(result);
       setShowUploader(false);
+      setActiveTab('digest');
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to process chat.');
     } finally {
@@ -115,12 +123,18 @@ export const App: React.FC = () => {
       const result = await digestSyntheticSample(sampleId);
       setDigest(result);
       setShowUploader(false);
+      setActiveTab('digest');
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to process synthetic sample.');
     } finally {
       setLoading(false);
       setProgress(null);
     }
+  };
+
+  const handleJumpToChatLine = (line: number) => {
+    setHighlightedChatLine(line);
+    setActiveTab('chat');
   };
 
   const isModelMissing = health && (!health.ollama_connected || health.status === 'model_missing');
@@ -196,28 +210,90 @@ export const App: React.FC = () => {
         {/* Digest View or Empty Welcome Screen */}
         {!loading && digest && (
           <div className="space-y-6 animate-in fade-in duration-200">
-            {/* 1. Safe Noise Avoided Celebration */}
-            <NoiseCelebration
-              safeCount={digest.safe_to_ignore_count}
-              totalMessages={digest.total_messages}
-              chatName={digest.chat_name}
-              durationSec={digest.processing_duration_sec}
-            />
+            {/* Tab Navigation: Morning Digest vs Styled Chat Stream */}
+            <div className="flex items-center justify-between border-b border-[#EBE5DC] dark:border-[#34302C] pb-2">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setActiveTab('digest')}
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+                    activeTab === 'digest'
+                      ? 'bg-[#4A6B53] text-white shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
+                  }`}
+                  aria-selected={activeTab === 'digest'}
+                  role="tab"
+                >
+                  <Coffee className="w-4 h-4" />
+                  <span>Morning Digest</span>
+                </button>
 
-            {/* 2. Two-Line Executive Morning Digest */}
-            <MorningDigest digest={digest} />
+                <button
+                  onClick={() => setActiveTab('chat')}
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+                    activeTab === 'chat'
+                      ? 'bg-[#4A6B53] text-white shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
+                  }`}
+                  aria-selected={activeTab === 'chat'}
+                  role="tab"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Formatted Chat View</span>
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-black/10 dark:bg-white/10 font-mono">
+                    {digest.messages?.length || digest.total_messages}
+                  </span>
+                </button>
+              </div>
 
-            {/* 3 & 4: Action Items (Who is waiting) + Dates & Deadlines */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-              <ActionItemList
-                items={digest.action_items}
-                onSelectCitation={setSelectedCitation}
-              />
-              <DatesTimeline
-                items={digest.deadlines}
-                onSelectCitation={setSelectedCitation}
-              />
+              <div className="hidden sm:flex items-center gap-2">
+                <span className="text-xs text-gray-400">
+                  {digest.chat_name}
+                </span>
+              </div>
             </div>
+
+            {/* TAB 1: Morning Digest View */}
+            {activeTab === 'digest' && (
+              <div className="space-y-6 animate-in fade-in duration-150">
+                {/* 1. Safe Noise Avoided Celebration */}
+                <NoiseCelebration
+                  safeCount={digest.safe_to_ignore_count}
+                  totalMessages={digest.total_messages}
+                  chatName={digest.chat_name}
+                  durationSec={digest.processing_duration_sec}
+                />
+
+                {/* 2. Executive Morning Digest (with 2-line summary & detailed breakdown) */}
+                <MorningDigest
+                  digest={digest}
+                  onOpenChatView={() => setActiveTab('chat')}
+                />
+
+                {/* 3 & 4: Action Items (Who is waiting) + Dates & Deadlines */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                  <ActionItemList
+                    items={digest.action_items}
+                    onSelectCitation={setSelectedCitation}
+                  />
+                  <DatesTimeline
+                    items={digest.deadlines}
+                    onSelectCitation={setSelectedCitation}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: Actual Formatted Chat View with Spam/Important Classifier */}
+            {activeTab === 'chat' && (
+              <div className="animate-in fade-in duration-150">
+                <ChatViewer
+                  messages={digest.messages || []}
+                  chatName={digest.chat_name}
+                  highlightedLine={highlightedChatLine}
+                  onSelectCitation={setSelectedCitation}
+                />
+              </div>
+            )}
 
             {/* Secondary Action: Digest another chat */}
             <div className="pt-6 border-t border-[#EBE5DC] dark:border-[#34302C] flex items-center justify-between">
@@ -255,7 +331,7 @@ export const App: React.FC = () => {
                 Sleep peacefully. Wake up informed.
               </h2>
               <p className="text-sm text-[#6B665F] dark:text-[#A09A90] max-w-lg mx-auto">
-                Stop doom-scrolling busy group chats. Sloth Digest reads them overnight on your local machine, pulling out action items, deadlines, and a two-line morning summary.
+                Stop doom-scrolling busy group chats. Sloth Digest reads them overnight on your local machine, pulling out action items, deadlines, detailed summaries, and a full classified chat view.
               </p>
             </div>
 
@@ -273,6 +349,7 @@ export const App: React.FC = () => {
       <SourceDrawer
         citation={selectedCitation}
         onClose={() => setSelectedCitation(null)}
+        onJumpToChat={handleJumpToChatLine}
       />
 
       {/* Stretch Goal: Tidier Modal */}

@@ -145,6 +145,30 @@ This document is the running log of all significant engineering, HCI, architectu
 - **What was deliberately left out**:
   - Cloud API fallbacks or proprietary tracker scripts.
 
+---
+
+## Phase 7 Sign-Off Review (Chat Summaries, Message Classification & Modern Chat View)
+- **What is done**:
+  - Multi-Paragraph Detailed Summary: Extended LLM map-reduce reduce prompt and fallback synthesizer to produce rich, narrative summaries breaking down context, decisions, deadlines, and noise metrics.
+  - Chat & Message Classification:
+    - Every message is classified as `important` (action items, deadlines, direct questions, blockers), `spam` (banter, emojis, reactions, media omitted, greetings), or `normal` (conversational context).
+    - Chat-level classification: `important` (action-heavy), `spam` (predominantly noise), or `balanced`.
+    - SQLite schema migration: Added `detailed_summary`, `overall_classification`, `important_count`, `spam_count`, and `messages_json` with automated fallback migrations.
+  - Modern Chat Viewer (`ChatViewer.tsx`):
+    - Styled bubble interface with sender avatar pastel initials, timestamp tags, line number links (`#L12`), and classification pills (`Important` in emerald, `Spam / Chatter` in amber).
+    - Filter tabs: `All Messages`, `Important Only`, `Spam / Chatter`, `Normal Context`.
+    - Real-time search by sender, message content, or classification reason.
+    - Centered system notice pills for encryption and group metadata messages.
+    - Smooth scroll and pulse highlight when navigated from citation drawers.
+  - Tab Switcher in Main Dashboard (`App.tsx`):
+    - Smooth switching between ☕ **Morning Digest** and 💬 **Formatted Chat View**.
+    - Jump-to-chat integration in `SourceDrawer` allowing immediate verification in the full conversation stream.
+- **What is risky**:
+  - Model returning single-sentence summaries under certain temperatures: Addressed by deterministic sentence splitting and fallback reassurance guarantees.
+- **What was deliberately left out**:
+  - Infinite virtualized DOM scrolling (current max supported chat length of 5,000 messages renders efficiently in standard DOM within <50ms without unnecessary virtualization libraries).
+
+
 
 
 

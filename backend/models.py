@@ -17,6 +17,18 @@ class ParsedMessage(BaseModel):
     is_system: bool = False
 
 
+class ClassifiedMessage(BaseModel):
+    """Represents a chat message with AI classification and reason."""
+    message_id: str
+    line_number: int
+    timestamp: str
+    sender: str
+    text: str
+    is_system: bool = False
+    classification: str = "normal"  # "important" | "spam" | "normal"
+    classification_reason: Optional[str] = None
+
+
 class MessageChunk(BaseModel):
     """A chronological slice of messages for map-reduce processing."""
     chunk_index: int
@@ -63,11 +75,17 @@ class DigestResponse(BaseModel):
     end_date: Optional[str] = None
     total_messages: int
     safe_to_ignore_count: int
+    important_count: int = 0
+    spam_count: int = 0
+    overall_classification: str = "balanced"  # "important" | "spam" | "balanced"
     two_line_summary: str
+    detailed_summary: Optional[str] = None
     action_items: List[ActionItem] = Field(default_factory=list)
     deadlines: List[DeadlineItem] = Field(default_factory=list)
+    messages: List[ClassifiedMessage] = Field(default_factory=list)
     model_used: str
     processing_duration_sec: float
+
 
 
 class ProgressEvent(BaseModel):

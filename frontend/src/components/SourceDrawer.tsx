@@ -1,13 +1,18 @@
 import React, { useEffect } from 'react';
-import { X, CheckCircle } from 'lucide-react';
+import { X, CheckCircle, MessageSquare } from 'lucide-react';
 import type { SourceCitation } from '../api';
 
 interface SourceDrawerProps {
   citation: SourceCitation | null;
   onClose: () => void;
+  onJumpToChat?: (lineNumber: number) => void;
 }
 
-export const SourceDrawer: React.FC<SourceDrawerProps> = ({ citation, onClose }) => {
+export const SourceDrawer: React.FC<SourceDrawerProps> = ({
+  citation,
+  onClose,
+  onJumpToChat,
+}) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -31,7 +36,10 @@ export const SourceDrawer: React.FC<SourceDrawerProps> = ({ citation, onClose })
             <span className="p-1.5 rounded-lg bg-[#EBF2ED] text-[#304736]">
               <CheckCircle className="w-4 h-4" />
             </span>
-            <h3 id="source-drawer-title" className="text-base font-semibold text-[#1E1D1B] dark:text-[#E6E2DC]">
+            <h3
+              id="source-drawer-title"
+              className="text-base font-semibold text-[#1E1D1B] dark:text-[#E6E2DC]"
+            >
               Hallucination Guard: Source Citation
             </h3>
           </div>
@@ -47,7 +55,9 @@ export const SourceDrawer: React.FC<SourceDrawerProps> = ({ citation, onClose })
         <div className="space-y-3">
           <div className="flex items-center justify-between text-xs text-gray-500 pb-1">
             <div className="flex items-center gap-1.5">
-              <span className="font-semibold text-gray-700 dark:text-gray-300">{citation.sender}</span>
+              <span className="font-semibold text-gray-700 dark:text-gray-300">
+                {citation.sender}
+              </span>
               <span>·</span>
               <span className="font-mono">{citation.timestamp}</span>
             </div>
@@ -65,7 +75,20 @@ export const SourceDrawer: React.FC<SourceDrawerProps> = ({ citation, onClose })
           </p>
         </div>
 
-        <div className="flex justify-end pt-2">
+        <div className="flex items-center justify-end gap-2 pt-2">
+          {onJumpToChat && (
+            <button
+              onClick={() => {
+                onJumpToChat(citation.line_number);
+                onClose();
+              }}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-[#304736] bg-[#EBF2ED] hover:bg-[#E1ECE3] dark:bg-[#222B24] dark:text-[#A8D1B2] transition-colors"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>Jump to Message in Chat</span>
+            </button>
+          )}
+
           <button
             onClick={onClose}
             className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-[#4A6B53] hover:bg-[#3D5944] focus:ring-2 focus:ring-[#4A6B53] focus:ring-offset-2"

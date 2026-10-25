@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import type { DigestResponse, ActionItem } from '../api';
-
 describe('Sloth Digest Frontend Logic', () => {
   it('calculates noise percentage and safe to ignore ratio correctly', () => {
     const total = 500;
@@ -16,9 +15,25 @@ describe('Sloth Digest Frontend Logic', () => {
       chat_name: 'CS301 Project',
       total_messages: 50,
       safe_to_ignore_count: 46,
+      important_count: 2,
+      spam_count: 10,
+      overall_classification: 'important',
       two_line_summary: 'Agreed on PostgreSQL schema.\nNext sprint planning on Tuesday.',
+      detailed_summary: 'The team convened to review schema options and sprint schedules.',
       model_used: 'qwen2.5:1.5b',
       processing_duration_sec: 1.8,
+      messages: [
+        {
+          message_id: 'm10',
+          line_number: 14,
+          timestamp: '24/10/26 14:00',
+          sender: 'Prof. Henderson',
+          text: 'Maya, please submit the report to the TA.',
+          is_system: false,
+          classification: 'important',
+          classification_reason: 'Action item: Submit report to TA',
+        },
+      ],
       action_items: [
         {
           id: 'a1',

@@ -26,6 +26,17 @@ export interface DeadlineItem {
   source: SourceCitation;
 }
 
+export interface ClassifiedMessage {
+  message_id: string;
+  line_number: number;
+  timestamp: string;
+  sender: string;
+  text: string;
+  is_system: boolean;
+  classification: 'important' | 'spam' | 'normal';
+  classification_reason?: string;
+}
+
 export interface DigestResponse {
   id: string;
   created_at: string;
@@ -34,9 +45,14 @@ export interface DigestResponse {
   end_date?: string;
   total_messages: number;
   safe_to_ignore_count: number;
+  important_count: number;
+  spam_count: number;
+  overall_classification: 'important' | 'spam' | 'balanced';
   two_line_summary: string;
+  detailed_summary?: string;
   action_items: ActionItem[];
   deadlines: DeadlineItem[];
+  messages: ClassifiedMessage[];
   model_used: string;
   processing_duration_sec: number;
 }
