@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { DigestResponse, ActionItem, DeadlineItem } from '../api';
+import type { DigestResponse, ActionItem } from '../api';
 
 describe('Sloth Digest Frontend Logic', () => {
   it('calculates noise percentage and safe to ignore ratio correctly', () => {

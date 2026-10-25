@@ -76,9 +76,23 @@ export interface SyntheticSample {
   size_bytes: number;
 }
 
-const API_BASE = "http://localhost:8000/api";
+const getApiBase = (): string => {
+  if (typeof window !== 'undefined') {
+    // When served from FastAPI on port 8000, use same-origin relative path
+    if (window.location.port === '8000' || !window.location.port) {
+      return '/api';
+    }
+    // In dev mode (e.g. port 5173), match the current browser hostname
+    const host = window.location.hostname || '127.0.0.1';
+    return `http://${host}:8000/api`;
+  }
+  return '/api';
+};
+
+const API_BASE = getApiBase();
 
 export async function fetchHealth(): Promise<SystemHealth> {
+
   const res = await fetch(`${API_BASE}/health`);
   if (!res.ok) throw new Error("Health check failed");
   return res.json();
