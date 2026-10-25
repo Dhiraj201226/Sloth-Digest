@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+  }
+
+  body {
+    background-color: #FDFBF7;
+    color: #2D2A26;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    body {
+      background-color: #181716;
+      color: #E6E2DC;
+    }
+  }
+
+  /* Accessible focus indicators */
+  :focus-visible {
+    outline: 2px solid #4A6B53;
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+}
+
+/* Reduced motion honoring */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Calm breathing animation for progress */
+@keyframes calm-pulse {
+  0%, 100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.008);
+  }
+}
+
+.animate-calm-pulse {
+  animation: calm-pulse 4s ease-in-out infinite;
+}
