@@ -7,7 +7,7 @@
 [![Hacktoberfest](https://img.shields.io/badge/Hacktoberfest-2026-orange.svg)](https://hacktoberfest.com/)
 [![Privacy: 100% Offline](https://img.shields.io/badge/Privacy-100%25%20Offline-success.svg)](#privacy-guarantee)
 [![WCAG 2.2 AA](https://img.shields.io/badge/WCAG-2.2%20AA%20Compliant-blue.svg)](docs/05_evaluation.md)
-[![Tests: Passing](https://img.shields.io/badge/Tests-17%20Passed-brightgreen.svg)](#testing)
+[![Tests: Passing](https://img.shields.io/badge/Tests-19%20Passed-brightgreen.svg)](#testing)
 
 ---
 
@@ -23,9 +23,11 @@ You face a stressful choice:
 
 Sloth Digest processes your exported WhatsApp chats (`.txt` or `.zip`) overnight on your local machine using an open-weight model via Ollama. When you wake up, a serene, zero-urgency dashboard gives you:
 1. **A Two-Line Morning Digest** — What happened while you rested.
-2. **Who is Waiting on You** — Action items and requests directly concerning you.
-3. **Dates & Deadlines Mentioned** — Chronological commitments.
-4. **The Safe to Ignore Counter** — Celebrating how much noise you avoided (e.g. *"384 messages safely bypassed"*).
+2. **Detailed Discussion Breakdown** — Multi-paragraph narrative summarizing key debates, agreements, and next steps.
+3. **Formatted Chat Stream with Spam / Important Classification** — Real-time filterable chat bubbles tagging tasks, deadlines, and direct questions as **`Important`** while filtering banter, emojis, and media placeholders as **`Spam`**.
+4. **Who is Waiting on You** — Action items and requests directly concerning you.
+5. **Dates & Deadlines Mentioned** — Chronological commitments.
+6. **The Safe to Ignore Counter** — Celebrating how much noise you avoided (e.g. *"384 messages safely bypassed"*).
 
 ---
 
@@ -67,8 +69,30 @@ cd ..
 python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
 ```
 Open **`http://localhost:8000`** in your browser!
+The production single-page application is automatically served by FastAPI from `frontend/dist`.
 
 *(Optional: For frontend live reload during development, run `npm run dev` inside `frontend/` on `http://localhost:5173`)*.
+
+---
+
+## 🐳 1-Command Docker Deployment
+
+You can deploy the entire stack (Sloth Digest + local Ollama container) using Docker Compose:
+
+```bash
+# Clone the repository
+git clone https://github.com/Dhiraj201226/Sloth-Digest.git
+cd Sloth-Digest
+
+# Start both Sloth Digest and Ollama
+docker compose up --build -d
+
+# Pull the default 1.5B model inside the Ollama container
+docker compose exec ollama ollama pull qwen2.5:1.5b
+```
+
+Once running, navigate to **`http://localhost:8000`**!
+Persistent SQLite digests and watched folders are mapped directly to `./data` and `./watched_chats`.
 
 ---
 
