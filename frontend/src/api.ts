@@ -93,6 +93,9 @@ export interface SyntheticSample {
 }
 
 const getApiBase = (): string => {
+  if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE) {
+    return import.meta.env.VITE_API_BASE;
+  }
   if (typeof window !== 'undefined') {
     // When served from FastAPI on port 8000, use same-origin relative path
     if (window.location.port === '8000' || !window.location.port) {
